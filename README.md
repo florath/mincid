@@ -15,8 +15,8 @@ the missing features - but the many many plugins and the interactions
 between them are the major source of problems.
 
 After that I had a short look at
-(gitlab-ci)[https://about.gitlab.com/gitlab-ci/] and (go
-cd)[http://www.go.cd/].  gitlab-ci looks good, but miss some features
+[gitlab-ci](https://about.gitlab.com/gitlab-ci/) and [go
+cd](http://www.go.cd/).  gitlab-ci looks good, but miss some features
 that I miss.  After installing the gocd package (143MByte) the
 server was not reachable: no sensible logs.  Did you try to debug such
 a beast?
