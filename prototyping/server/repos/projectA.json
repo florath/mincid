@@ -1,0 +1,6 @@
+{
+    'name': 'ProjectA',
+    'git': 'http://my-server/git/project_a',
+
+    'branches': [ 'master', 'florath/refactor/main_event_loop' ]
+}

@@ -1,0 +1,9 @@
+{ 'debian8':
+  { 'docker_name': 'deb8',
+    'processor_type': 'amd64' },
+
+  'centos7':
+  { 'docker_name': 'cent7',
+    'processor_type': 'amd64' }
+}
+

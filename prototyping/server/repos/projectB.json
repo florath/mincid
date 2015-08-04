@@ -1,0 +1,6 @@
+{
+    'name': 'ProjectB',
+    'git': 'http://other-server/git/project_b',
+
+    'branches': [ 'master', 'dummy/testing/add_unit_tests' ]
+}
