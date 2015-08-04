@@ -26,16 +26,16 @@ Therefore I started over starting with something small and usable.
 ## Requirements
 **mincid** should
 * build projects
-* be able to build projects on different variants (e.g. different
-  compilers, different libraries, different java implementations, ...)
-* start each build in a separated environment
-  Docker is used
-* use an easy text file based configuration
-  Maybe: JSON based and stored in a git repo
-* use an easy notification mechanism (in case of a problem)
-  Maybe: EMail and IRC
-* provide easy access to artifacts and log files
-  Maybe: NFS export
+* be able to build projects on different variants: (e.g. different
+  compilers, different libraries, different processor types, ...)
+* start each build in a separated environment:
+  Maybe Docker is used
+* use an easy text file based configuration:
+  Maybe JSON based and stored in a git repo
+* use an easy notification mechanism (in case of a problem):
+  Maybe EMail and IRC
+* provide easy access to artifacts and log files:
+  Maybe NFS export
 * (Optional) provide statistics information to a Carbon / Graphite
   instance
 
