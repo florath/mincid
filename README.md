@@ -46,5 +46,21 @@ implement:
 * Millions of plugins and modules
 * Complex structure
 
-## Stay tuned
-more (source code) to come....
+## Elements
+### Docker
+Docker is used for the mincid jobs: each time a new 'plain' Docker
+container is started.
+### SLURM
+SLURM does the resource and job handling on the lower level.
+### LDAP (IPA)
+The whole system uses a centralized LDAP server (IPA) for
+authentication and key storage.
+### GIT
+git is used for handling the source code for the different projects to
+build / deliver as well as for project configuration of mincid itself.
+### MAIL
+A email server is used to send notifications about jobs.
+### Python
+python3 is used a programming language - the glue between the
+executing systems.
+
