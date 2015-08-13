@@ -180,13 +180,25 @@ su - builder --command '%s && %s'""" %
         self.__logger.info("Docker process return value [%d]" % p.returncode)
         self.__logger.info("Finished variant [%s]" % (self.__name_for_fs))
 
+class BranchDefines(object):
+
+    def __init__(self, bd):
+        self.__branch_defines = bd
+
+    def replace_defines(self, value):
+        if value[0] != '$':
+            return value
+        return self.__branch_defines[value[1:]]
+        
 class Stage(object):
 
-    def __init__(self, name, stage_cfg, global_cfg, log_dir, stage_cnt, branch_name):
+    def __init__(self, name, stage_cfg, branch_defines, global_cfg,
+                 log_dir, stage_cnt, branch_name):
         self.__name = name
         self.__log_dir = log_dir
         self.__name_for_fs = "%03d-%s" % (stage_cnt, name)
         self.__stage_config = stage_cfg
+        self.__branch_defines = branch_defines
         self.__global_config = global_cfg
         self.__branch_name = branch_name
         self.__logger = MLogger("Stage", self.__name_for_fs, log_dir)
@@ -198,8 +210,8 @@ class Stage(object):
     def process(self):
         self.__logger.info("Start stage [%s]" % self.__name)
         image_cnt = 0
-        for image in self.__stage_config['images']:
-            base = image['base']
+        for image in self.__branch_defines.replace_defines(self.__stage_config['images']):
+            base = self.__branch_defines.replace_defines(image['base'])
             self.__logger.info("Start image [%s] [%s]" % (base, image_cnt))
             variants = list(itertools.product(*image['variants']))
             for variant_list in variants:
@@ -210,7 +222,20 @@ class Stage(object):
                 variant.process()
                 del variant
         self.__logger.info("Finished stage [%s]" % self.__name)
+
         
+class BranchConfig(object):
+
+    def __init__(self, config):
+        self.__branch_defines = BranchDefines(config[0])
+        self.__jobs = config[1]
+
+    def branch_defines(self):
+        return self.__branch_defines
+
+    def jobs(self):
+        return self.__jobs
+
 
 class Branch(object):
 
@@ -250,18 +275,19 @@ su - builder --command 'cd %s && cat mincid.json'""" %
         
     def process(self):
         self.__logger.info("Start branch [%s]" % self.__name)
-        branch_cfg = json.loads(self.__get_branch_config().decode("UTF-8"))
+        branch_cfg = BranchConfig(json.loads(self.__get_branch_config().decode("UTF-8")))
         stage_cnt = 0
-        for stage_cfg in branch_cfg:
+        for stage_cfg in branch_cfg.jobs():
+            self.__logger.info("Handling stage [%s]" % stage_cfg)
             stage_name = stage_cfg['name']
-            stage = Stage(stage_name, stage_cfg, self.__config,
+            stage = Stage(stage_name, stage_cfg, branch_cfg.branch_defines(), self.__config,
                           os.path.join(self.__log_dir, self.__name_for_fs),
                           stage_cnt, self.__name)
             stage.process()
             stage_cnt += 1
             del stage
         self.__logger.info("Finished branch [%s]" % self.__name)
-            
+
 class Project(object):
 
     def __init__(self, desc_file, log_dir):
