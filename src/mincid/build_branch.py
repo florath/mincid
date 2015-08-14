@@ -63,28 +63,39 @@ class Branch(object):
         
         with open(stdouterr_filename, "w") as fd_stdouterr:
             # Create own temp dir
-            variant_name = "Variant_%s_%s" % (base, "_".join(variant_list))
+            variant_name = "%s_%s_%s_%s_%s" % \
+                           (self.__config.project_cfg('name'),
+                            self.__name,
+                            sname, base, "_".join(variant_list))
             variant_tmp_dir = tempfile.mkdtemp(
                 prefix=variant_name, dir=self.__variants_base_dir)
             variant_desc = {
                 'name': variant_name,
                 'base': base,
                 'branch_name': self.__name,
-                'global_tmp_dir': self.__tmp_dir
+                'global_tmp_dir': self.__tmp_dir,
+                'directory': variant_tmp_dir,
+                'run': self.__config.branch_jobs()[sname]['run'],
             }
 
             if len(variant_list)>0:
                 variant_desc['variant_list'] = variant_list
 
+            if 'install' in self.__config.branch_jobs()[sname]:
+                variant_desc[
+                    'install'] = self.__config.branch_jobs()[sname]['install']
+                
             variant_cfg_file_name = os.path.join(
                 variant_tmp_dir, "variant.json")
             with open(variant_cfg_file_name, "w") as fd:
                 json.dump(variant_desc, fd)
 
-            subproc_slist = ["sbatch", "--job-name=%s" % variant_name,
+            subproc_slist = [
+                "sbatch", "--job-name=%s" % variant_name,
+                "--extra-node-info=1:2:1",
                  "--export=PYTHONPATH"]
             if len(dep_jobids)>0:
-                dep_str = ",".join(str(x) for x in dep_jobids)
+                dep_str = ":".join(str(x) for x in dep_jobids)
                 self.__logger.info("New batch is dependent on [%s]" %
                                    dep_str)
                 subproc_slist.append("--dependency=afterok:%s" % dep_str)
