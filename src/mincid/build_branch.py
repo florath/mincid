@@ -12,6 +12,7 @@ class Branch(object):
     def __init__(self, branch_name, tmp_dir):
         self.__name = branch_name
         self.__tmp_dir = tmp_dir
+        self.__jobids = {}
         self.__config = Config(tmp_dir, branch_name)
         self.__branch_dir = os.path.join(tmp_dir, branch_name.replace("/", "_"))
         self.__logger = MLogger("Branch", "build_branch", self.__branch_dir)
@@ -38,31 +39,60 @@ class Branch(object):
                         break
         return result
 
-    def __start_image(self, sname, image, jobids):
+    
+    def __start_variant(self, sname, image, variant_list):
+        self.__logger.info("Start variant [%s] [%s] [%s]"
+                           % (sname, image, variant_list))
+
+        stdouterr_filename = os.path.join(self.__branch_dir,
+                                          "start_variants.stdouterr")
+        with open(stdouterr_filename, "w") as fd_stdouterr:
+            p = subprocess.Popen(
+                ["sbatch", "--job-name=Variant_%s_%s" %
+                 (image['base'], "_".join(variant_list)),
+                 "--export=PYTHONPATH",
+                 os.path.join("/home/mincid/devel/mincid/src/mincid",
+                              "build_variant.py"), self.__tmp_dir
+                 image['base'], "[%s]" % ",".join(variant_list)],
+                stdout=fd_stdouterr, stderr=fd_stdouterr)
+        p.wait()
+        self.__logger.info("sbatch process return value [%d]" % p.returncode)
+        self.__logger.info("Finished variant [%s] [%s] [%s]"
+                           % (sname, image, variant_list))
+    
+    def __start_variants(self, sname, image):
+        self.__logger.info("Start variants [%s] [%s]" % (sname, image))
+        base = image['base']
+        variants = list(itertools.product(*image['variants']))
+        for variant_list in variants:
+            self.__start_variant(sname, image, variant_list)
+        self.__logger.info("Finished variants [%s] [%s]" % (sname, image))
+
+    def __start_image(self, sname, image):
         jc = self.__config.branch_jobs()
         self.__logger.info("Start image [%s] [%s]" % (sname, image['base']))
         if 'variants' in image:
-            self.__start_variants(sname, image, jobids)
+            self.__start_variants(sname, image)
         else:
-            self.__start_base(sname, image, jobids)
+            self.__start_base(sname, image)
             
-        self.__logger.info("Finished image [%s] [%s]" % (sname, image['base'])
+        self.__logger.info("Finished image [%s] [%s]" %
+                           (sname, image['base']))
 
-    def __start_stage(self, sname, jobids):
+    def __start_stage(self, sname):
         self.__logger.info("Start stage [%s]" % sname)
         for image in self.__config.branch_jobs()[sname]['images']:
-            self.__start_image(sname, image, jobids)
+            self.__start_image(sname, image)
         self.__logger.info("Finished stage [%s]" % sname)
 
     def __start_stages(self, nlist):
         self.__logger.info("Start all stages [%s]" % (nlist))
         # Store all jobids for the appropriate (high level) job
-        jobids = {}
         for n in nlist:
-            jobids[n] = []
+            self.__jobids[n] = []
 
         for n in nlist:
-            self.__start_stage(n, jobids)
+            self.__start_stage(n)
 
         self.__logger.info("Finished stating all stages [%s]" % (nlist))
 
