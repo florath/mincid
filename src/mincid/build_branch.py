@@ -48,12 +48,19 @@ class Branch(object):
 
     
     def __start_variant(self, sname, image, variant_list):
-        self.__logger.info("Start variant [%s] [%s] [%s]"
-                           % (sname, image, variant_list))
         base = self.__config.expand(image['base'])
-
+        self.__logger.info("Start variant [%s] [%s] [%s]"
+                           % (sname, base, variant_list))
         stdouterr_filename = os.path.join(self.__branch_dir,
                                           "start_variants.stdouterr")
+
+        dep_jobids = []
+        # Collect jobids of all dependend stages
+        if 'depends_on' in self.__config.branch_jobs()[sname]:
+            for dep_stage in self.__config.branch_jobs()[sname]['depends_on']:
+                dep_jobids.extend(self.__jobids[dep_stage])
+            self.__logger.info("Dependent jobids [%s]" % dep_jobids)
+        
         with open(stdouterr_filename, "w") as fd_stdouterr:
             # Create own temp dir
             variant_name = "Variant_%s_%s" % (base, "_".join(variant_list))
@@ -73,21 +80,33 @@ class Branch(object):
                 variant_tmp_dir, "variant.json")
             with open(variant_cfg_file_name, "w") as fd:
                 json.dump(variant_desc, fd)
-                                              
-            p = subprocess.Popen(
-                ["sbatch", "--job-name=%s" % variant_name,
-                 "--export=PYTHONPATH",
-                 os.path.join("/home/mincid/devel/mincid/src/mincid",
-                              "build_variant.py"), variant_cfg_file_name],
+
+            subproc_slist = ["sbatch", "--job-name=%s" % variant_name,
+                 "--export=PYTHONPATH"]
+            if len(dep_jobids)>0:
+                dep_str = ",".join(str(x) for x in dep_jobids)
+                self.__logger.info("New batch is dependent on [%s]" %
+                                   dep_str)
+                subproc_slist.append("--dependency=afterok:%s" % dep_str)
+            subproc_slist.extend(
+                [os.path.join("/home/mincid/devel/mincid/src/mincid",
+                              "build_variant.py"), variant_cfg_file_name])
+                
+            p = subprocess.Popen(subproc_slist,
                 stdout=subprocess.PIPE, stderr=fd_stdouterr)
 
         res = p.stdout.read()
         p.wait()
         
         self.__logger.info("sbatch process return value [%d]" % p.returncode)
-        self.__logger.info("sbatch process id [%s]" % res)
+
+        decoded = res.decode("UTF-8")
+        jobnr = int(decoded[20:-1])
+        self.__jobids[sname].append(jobnr)
+        
+        self.__logger.info("sbatch process id [%d]" % jobnr)
         self.__logger.info("Finished variant [%s] [%s] [%s]"
-                           % (sname, image, variant_list))
+                           % (sname, base, variant_list))
     
     def __start_variants(self, sname, image):
         self.__logger.info("Start variants [%s] [%s]" % (sname, image))
@@ -109,6 +128,7 @@ class Branch(object):
 
     def __start_stage(self, sname):
         self.__logger.info("Start stage [%s]" % sname)
+
         for image in self.__config.branch_jobs()[sname]['images']:
             self.__start_image(sname, image)
         self.__logger.info("Finished stage [%s]" % sname)
