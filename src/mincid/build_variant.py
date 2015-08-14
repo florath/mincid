@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+import sys
+
+from MLogger import MLogger
+
+ml = MLogger("TST", "nix", "/tmp")
+
+ml.info("Args [%s]" % (sys.argv))
+
+
 class Deprecated(object):
 
     def __variant_cmds(self, variant_flat):

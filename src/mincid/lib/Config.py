@@ -13,7 +13,8 @@ class Config(object):
         with open(os.path.join(base_dir, "project_config.json"), "r") as fd:
             self.__project_config = json.load(fd)
         
-        with open(os.path.join(base_dir, self.__branch_name.fs(), "mincid.json"), "r") as fd:
+        with open(os.path.join(base_dir, self.__branch_name.fs(),
+                               "mincid.json"), "r") as fd:
             self.__branch_config = json.load(fd)
 
     def project_cfg(self, key):
@@ -25,3 +26,7 @@ class Config(object):
     def branch_jobs(self):
         return self.__branch_config[1]
 
+    def expand(self, val):
+        if val[0] != "$":
+            return val
+        return self.__branch_config[0][val[1:]]

@@ -6,6 +6,10 @@ from Config import Config
 
 import os
 import sys
+import json
+import tempfile
+import itertools
+import subprocess
 
 class Branch(object):
 
@@ -14,9 +18,12 @@ class Branch(object):
         self.__tmp_dir = tmp_dir
         self.__jobids = {}
         self.__config = Config(tmp_dir, branch_name)
-        self.__branch_dir = os.path.join(tmp_dir, branch_name.replace("/", "_"))
+        self.__branch_dir = os.path.join(tmp_dir,
+                                         branch_name.replace("/", "_"))
         self.__logger = MLogger("Branch", "build_branch", self.__branch_dir)
         self.__logger.info("Init branch [%s]" % (self.__name))
+        self.__variants_base_dir = os.path.join(self.__branch_dir, "variants")
+        os.makedirs(self.__variants_base_dir)
 
     def __sort_deps(self):
         """Sorts the branch jobs using the dependencies"""
@@ -43,26 +50,47 @@ class Branch(object):
     def __start_variant(self, sname, image, variant_list):
         self.__logger.info("Start variant [%s] [%s] [%s]"
                            % (sname, image, variant_list))
+        base = self.__config.expand(image['base'])
 
         stdouterr_filename = os.path.join(self.__branch_dir,
                                           "start_variants.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
+            # Create own temp dir
+            variant_name = "Variant_%s_%s" % (base, "_".join(variant_list))
+            variant_tmp_dir = tempfile.mkdtemp(
+                prefix=variant_name, dir=self.__variants_base_dir)
+            variant_desc = {
+                'name': variant_name,
+                'base': base,
+                'branch_name': self.__name,
+                'global_tmp_dir': self.__tmp_dir
+            }
+
+            if len(variant_list)>0:
+                variant_desc['variant_list'] = variant_list
+
+            variant_cfg_file_name = os.path.join(
+                variant_tmp_dir, "variant.json")
+            with open(variant_cfg_file_name, "w") as fd:
+                json.dump(variant_desc, fd)
+                                              
             p = subprocess.Popen(
-                ["sbatch", "--job-name=Variant_%s_%s" %
-                 (image['base'], "_".join(variant_list)),
+                ["sbatch", "--job-name=%s" % variant_name,
                  "--export=PYTHONPATH",
                  os.path.join("/home/mincid/devel/mincid/src/mincid",
-                              "build_variant.py"), self.__tmp_dir
-                 image['base'], "[%s]" % ",".join(variant_list)],
-                stdout=fd_stdouterr, stderr=fd_stdouterr)
+                              "build_variant.py"), variant_cfg_file_name],
+                stdout=subprocess.PIPE, stderr=fd_stdouterr)
+
+        res = p.stdout.read()
         p.wait()
+        
         self.__logger.info("sbatch process return value [%d]" % p.returncode)
+        self.__logger.info("sbatch process id [%s]" % res)
         self.__logger.info("Finished variant [%s] [%s] [%s]"
                            % (sname, image, variant_list))
     
     def __start_variants(self, sname, image):
         self.__logger.info("Start variants [%s] [%s]" % (sname, image))
-        base = image['base']
         variants = list(itertools.product(*image['variants']))
         for variant_list in variants:
             self.__start_variant(sname, image, variant_list)
@@ -70,14 +98,14 @@ class Branch(object):
 
     def __start_image(self, sname, image):
         jc = self.__config.branch_jobs()
-        self.__logger.info("Start image [%s] [%s]" % (sname, image['base']))
+        base = self.__config.expand(image['base'])
+        self.__logger.info("Start image [%s] [%s]" % (sname, base))
         if 'variants' in image:
             self.__start_variants(sname, image)
         else:
-            self.__start_base(sname, image)
+            self.__start_variant(sname, image, [])
             
-        self.__logger.info("Finished image [%s] [%s]" %
-                           (sname, image['base']))
+        self.__logger.info("Finished image [%s] [%s]" % (sname, base))
 
     def __start_stage(self, sname):
         self.__logger.info("Start stage [%s]" % sname)

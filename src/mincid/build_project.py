@@ -17,7 +17,8 @@ class Project(object):
 
     def __init__(self, desc_file, log_dir):
         self.__tmp_dir = tempfile.mkdtemp(prefix="mincid_build_", dir="/tmp")
-        shutil.copyfile(desc_file, os.path.join(self.__tmp_dir, "project_config.json"))
+        shutil.copyfile(desc_file,
+                        os.path.join(self.__tmp_dir, "project_config.json"))
         with open(desc_file, "r") as fd:
             self.__config = json.load(fd)
         self.__log_dir = self.__tmp_dir
@@ -27,13 +28,15 @@ class Project(object):
 
     def process(self):
         self.__logger.info("Start project [%s]" % self.__name)
-        stdouterr_filename = os.path.join(self.__tmp_dir, "sbatch_project.stdouterr")
+        stdouterr_filename = os.path.join(self.__tmp_dir,
+                                          "sbatch_project.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
-            p = subprocess.Popen(["sbatch", "--job-name=BranchesConfig",
-                                  "--export=PYTHONPATH",
-                                  os.path.join("/home/mincid/devel/mincid/src/mincid",
-                                               "build_branches_config.py"), self.__tmp_dir],
-                                 stdout=fd_stdouterr, stderr=fd_stdouterr)
+            p = subprocess.Popen(
+                ["sbatch", "--job-name=BranchesConfig",
+                 "--export=PYTHONPATH",
+                 os.path.join("/home/mincid/devel/mincid/src/mincid",
+                              "build_branches_config.py"), self.__tmp_dir],
+                stdout=fd_stdouterr, stderr=fd_stdouterr)
         p.wait()
         self.__logger.info("sbatch process return value [%d]" % p.returncode)
         self.__logger.info("Finished project startup [%s]" % self.__name)
