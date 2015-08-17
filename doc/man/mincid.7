@@ -1,0 +1,93 @@
+.\" 
+.\" Man page for mincid
+.\"
+.\" For license, see the 'LICENSE' file.
+.\"
+.TH mincid 7 2015-08-19 "User Commands" "User Commands"
+.SH NAME
+mincid \- minimalist command line continuous integration and deployment
+.SH DESCRIPTION
+.B mincid
+is a command line driven continuous integration and deployment system.
+Instead of reinventing the wheel, a lot of different technologies and
+methodologies are used to fulfill the tasks.
+.B mincid
+itself is very lightweight and can be seen as glue between the
+different used applications.
+.SH DEPENDENCIES
+.B mincid
+used the following applications.  Most of them are directly used \-
+therefore a user of
+.B mincid
+should be familiar with them:
+.RS
+.IP \[bu] 2
+SLURM is used as a job scheduler and resource manager.  The tasks are
+handled by the appropriate worker nodes as configured in slurm.
+.IP \[bu]
+Docker is used to execute all jobs in a well defined environment.
+Typically some minimalist images are created (e.g. debian7, debian8,
+ubuntu15_10, centos7, ....).  Other needed packages are installed each
+time a job is executed.  Example: if the application needs a
+C-compiler, the appropriate package is installed during the job
+execution. 
+.IP \[bu]
+git is used to access the source code of the projects.  Also it is
+used to store the
+.B mincid
+configuration.
+.RE
+
+The format of all configuration files is JSON.  The user of
+.B mincid
+should be familiar with this format.
+.SH CONFIGURATION
+There are four levels of configuration.  Here a list of configurations
+\- starting with the top level.  Each level points to another level of
+configuration.
+.IP "master configuration" 0.4i
+The master configuration contains a pointer to the git repository
+where the system configuration and the project configuration can be
+found.
+
+This configuration is typically stored a file in the file system of
+the control node.
+.IP "system configuration"
+The system configuration contains the configuration of the different
+base images.  When a specific variant should be used, this
+configuration describes how this is realized.
+
+This configuration is stored in the
+.B mincid
+configuration git repository.
+.IP "project configuration"
+For each project the git repository (and branches) are configured that
+should be build.  Also the variants and commands are specified in this
+configuration.
+
+This configuration is stored in the
+.B mincid
+configuration git repository.
+.IP "branch configuration"
+For each branch a configuration is used to really execute the jobs.  A
+complete directed graph of dependencies between jobs can be given.
+
+This configuration is stored in the
+.B mincid
+source git repository of the project in the appropriate branch(es).
+
+.SH "SEE ALSO"
+.BR slurm-wlm(1),
+.BR squeue(1),
+.BR scancel(1),
+.BR sinfo(1),
+.BR slurmd(8),
+.BR slurmctld(8),
+.BR docker(1),
+.BR git(1),
+.BR jq(1)
+.SH AUTHOR
+Written by Andre Florath (andre@florath.net)
+.SH COPYRIGHT
+Copyright \(co 2015 by Andre Florath (andre@florath.net).
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.

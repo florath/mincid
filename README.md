@@ -1,5 +1,5 @@
 # mincid
-Minimalistic Countinous Integration &amp; Delivery Tool
+Minimalist Countinous Integration &amp; Delivery Tool
 
 ## Introduction
 There are a lot of different Continous Integration and Continous
