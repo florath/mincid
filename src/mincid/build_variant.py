@@ -62,6 +62,9 @@ class Variant(object):
                 os.path.join(self.__lconfig['global_tmp_dir'],
                              'project_config.json'), "r") as fd:
             self.__global_config = json.load(fd)
+        with open(os.path.join(self.__lconfig['global_tmp_dir'],
+                               "mincid_master.json"), "r") as fd:
+            self.__master_config = json.load(fd)
 
         self.__config = Config(self.__lconfig['global_tmp_dir'],
                                self.__lconfig['branch_name'])
@@ -128,8 +131,6 @@ class Variant(object):
         if not 'control_files' in install_dict:
             return
             
-        self.__cmds.append(
-            "apt-get -y install --no-install-recommends equivs")
         for cf in install_dict['control_files']:
             self.__cmds_post.append(
                 "cd ~builder && mk-build-deps "
@@ -155,18 +156,20 @@ class Variant(object):
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(
                 ["docker", "run", "--rm=true", "-i",
+                 "-v", "%s:/artifacts:rw" % self.__lconfig['global_tmp_dir'],
                  self.__lconfig['base'],
                  "/bin/bash", "-x", "-e"], stdin=subprocess.PIPE,
                 stdout=fd_stdouterr, stderr=fd_stdouterr)
         p.stdin.write(bytes(
 """%s
-useradd --create-home builder
+%s
 su - builder --command "%s"
 su - builder --command 'git clone %s %s'
 su - builder --command 'cd %s && git checkout %s'
 %s
 su - builder --command '%s && %s'""" %
-            ( " && ".join(self.__cmds),
+            ("\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image']),
+             " && ".join(self.__cmds),
               self.__global_config['vcs']['authcmd'],
               self.__global_config['vcs']['url'],
               self.__global_config['dest'], self.__global_config['dest'],

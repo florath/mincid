@@ -3,6 +3,7 @@
 
 from MLogger import MLogger
 from Config import Config
+from RFSString import RFSString
 
 import os
 import sys
@@ -63,9 +64,10 @@ class Branch(object):
         
         with open(stdouterr_filename, "w") as fd_stdouterr:
             # Create own temp dir
+            rfs = RFSString(self.__name)
             variant_name = "%s_%s_%s_%s_%s" % \
                            (self.__config.project_cfg('name'),
-                            self.__name,
+                            rfs.fs(),
                             sname, base, "_".join(variant_list))
             variant_tmp_dir = tempfile.mkdtemp(
                 prefix=variant_name, dir=self.__variants_base_dir)

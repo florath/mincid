@@ -15,12 +15,16 @@ from MLogger import MLogger
 
 class Project(object):
 
-    def __init__(self, desc_file, log_dir):
+    def __init__(self, master_conf, desc_file):
         self.__tmp_dir = tempfile.mkdtemp(prefix="mincid_build_", dir="/tmp")
         shutil.copyfile(desc_file,
                         os.path.join(self.__tmp_dir, "project_config.json"))
+        shutil.copyfile(master_conf,
+                        os.path.join(self.__tmp_dir, "mincid_master.json"))
         with open(desc_file, "r") as fd:
             self.__config = json.load(fd)
+        with open(master_conf, "r") as fd:
+            self.__master_config = json.load(fd)
         self.__log_dir = self.__tmp_dir
         self.__name = self.__config['name']
         self.__logger = MLogger("Project", self.__name, self.__log_dir)
@@ -34,7 +38,7 @@ class Project(object):
             p = subprocess.Popen(
                 ["sbatch", "--job-name=BranchesConfig",
                  "--export=PYTHONPATH",
-                 os.path.join("/home/mincid/devel/mincid/src/mincid",
+                 os.path.join(self.__master_config['mincid_install_dir'],
                               "build_branches_config.py"), self.__tmp_dir],
                 stdout=fd_stdouterr, stderr=fd_stdouterr)
         p.wait()
@@ -42,7 +46,7 @@ class Project(object):
         self.__logger.info("Finished project startup [%s]" % self.__name)
 
 def main():
-    project = Project(sys.argv[1], "log")
+    project = Project(sys.argv[1], sys.argv[2])
     project.process()
 
 if __name__=="__main__":

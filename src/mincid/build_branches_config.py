@@ -9,8 +9,6 @@ import sys
 import json
 import subprocess
 
-WORKER_IMAGE="debian9"
-
 class BranchesConfig(object):
 
     def __init__(self, tmp_dir):
@@ -19,6 +17,8 @@ class BranchesConfig(object):
 
         with open(os.path.join(self.__tmp_dir, "project_config.json"), "r") as fd:
             self.__config = json.load(fd)
+        with open(os.path.join(self.__tmp_dir, "mincid_master.json"), "r") as fd:
+            self.__master_config = json.load(fd)
 
         self.__logger.info("Init branches config")
 
@@ -31,15 +31,15 @@ class BranchesConfig(object):
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(["docker", "run", "--rm=true", "-i",
                                   "-v", "%s:/artifacts:rw" % self.__tmp_dir,
-                                  WORKER_IMAGE,
+                                  self.__master_config['worker_image'],
                                   "/bin/bash"], stdin=subprocess.PIPE,
                                  stdout=fd_stdouterr, stderr=fd_stdouterr)
         p.stdin.write(bytes(
-"""chmod a+rwx /artifacts
-useradd --create-home builder
+"""%s
 su - builder --command "%s"
 su - builder --command 'git clone %s %s'
-""" % (self.__config['vcs']['authcmd'], self.__config['vcs']['url'],
+""" % ("\n".join(self.__master_config['imagedef'][self.__master_config['worker_image']]['setup_image']),
+       self.__config['vcs']['authcmd'], self.__config['vcs']['url'],
        self.__config['dest']), "UTF-8"))
 
         for branch_name in self.__config['branches']:
@@ -71,7 +71,7 @@ su - builder --command 'git clone %s %s'
                     ["sbatch", "--job-name=Branch_%s" %
                      branch_name,
                      "--export=PYTHONPATH",
-                     os.path.join("/home/mincid/devel/mincid/src/mincid",
+                     os.path.join(self.__master_config['mincid_install_dir'],
                                   "build_branch.py"), branch_name,
                      self.__tmp_dir],
                     stdout=fd_stdouterr, stderr=fd_stdouterr)
