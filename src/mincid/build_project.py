@@ -16,15 +16,17 @@ from MLogger import MLogger
 class Project(object):
 
     def __init__(self, master_conf, desc_file):
-        self.__tmp_dir = tempfile.mkdtemp(prefix="mincid_build_", dir="/tmp")
+        with open(master_conf, "r") as fd:
+            self.__master_config = json.load(fd)
+        self.__tmp_dir = tempfile.mkdtemp(
+            prefix="mincid_build_",
+            dir=self.__master_config["worker_dir"])
         shutil.copyfile(desc_file,
                         os.path.join(self.__tmp_dir, "project_config.json"))
         shutil.copyfile(master_conf,
                         os.path.join(self.__tmp_dir, "mincid_master.json"))
         with open(desc_file, "r") as fd:
             self.__config = json.load(fd)
-        with open(master_conf, "r") as fd:
-            self.__master_config = json.load(fd)
         self.__log_dir = self.__tmp_dir
         self.__name = self.__config['name']
         self.__logger = MLogger("Project", self.__name, self.__log_dir)

@@ -12,17 +12,8 @@ import subprocess
 # CONFIG
 
 # Commands that are executed
-VC_ALWAYS_PRE=(r"echo 'debconf debconf/frontend select noninteractive' | debconf-set-selections",
-               r"echo 'deb-src http://ftp.de.debian.org/debian stretch main' >>/etc/apt/sources.list",
-               r"apt-get update",
-)
 
-VC_REMOVE_ALL_ALTERNATIVES=r"true"
-
-INSTALL_PKG_NAMES={
-}
-
-VARIANT_CMDS = (
+DDDDDD_VARIANT_CMDS = (
     (('.*:g\+\+-([^:]*):.*'),
      (r"apt-get -y install --no-install-recommends g++-\1", ),
      (r'export PLATFORM_COMPILER_NAME=gcc', r'export PLATFORM_CC=/usr/bin/gcc-\1', r'export PLATFORM_CXX=/usr/bin/g++-\1'),
@@ -79,9 +70,8 @@ class Variant(object):
         self.__cmds_post = [r'true']
 
     def __variant_cmds(self, variant_flat):
-        self.__cmds.extend(VC_ALWAYS_PRE)
         # Check if re matches
-        for vcfg in VARIANT_CMDS:
+        for vcfg in self.__master_config['imagedef'][self.__lconfig['base']]['variant_cmds']:
             vre = vcfg[0]
             vcmd = vcfg[1]
             self.__logger.debug("RE search [%s] [%s]" % (vre, variant_flat))
@@ -111,15 +101,16 @@ class Variant(object):
             return
 
         rpkgs = self.__config.expand(install_dict['pkgs'])
-        
+
+        install_pkg_names = self.__master_config['imagedef'][self.__lconfig['base']]['pkg_names']
         for ipkg in rpkgs:
-            if not ipkg in INSTALL_PKG_NAMES:
+            if not ipkg in install_pkg_names:
                 self.__logger.warning(
                     "Package with symolic name [%s] " % ipkg
                     + "has no name mapping")
                 pkgs.append(ipkg)
             else:
-                pkgs.append(INSTALL_PKG_NAMES[ipkg])
+                pkgs.append(install_pkg_names[ipkg])
         if len(pkgs)>0:
             self.__cmds.append(
                 "apt-get -y install --no-install-recommends %s" %
