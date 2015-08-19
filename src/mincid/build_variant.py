@@ -9,41 +9,6 @@ import sys
 import json
 import subprocess
 
-# CONFIG
-
-# Commands that are executed
-
-DDDDDD_VARIANT_CMDS = (
-    (('.*:g\+\+-([^:]*):.*'),
-     (r"apt-get -y install --no-install-recommends g++-\1", ),
-     (r'export PLATFORM_COMPILER_NAME=gcc', r'export PLATFORM_CC=/usr/bin/gcc-\1', r'export PLATFORM_CXX=/usr/bin/g++-\1'),
-    ),
-    (('.*:clang\+\+-([^:]*):.*'),
-     (r"apt-get -y install --no-install-recommends clang-\1", ),
-     (r'export PLATFORM_COMPILER_NAME=clang', r'export PLATFORM_CC=/usr/bin/clang-\1', r'export PLATFORM_CXX=/usr/bin/clang++-\1')
-     ),
-    # Do nothing for libstdc++:
-    # dependent on the compiler a different lib must be installed
-    (('.*:libc\+\+:.*'),
-     (r"apt-get -y install --no-install-recommends libc++-dev", ),
-     (r'export PLATFORM_CXXLIB_NAME=libc++', )
-    ),
-    (('.*:g\+\+-([^:]*):.*libstdc\+\+:.*'),
-     (r"apt-get -y install --no-install-recommends libstdc++-\1-dev", )),
-
-    # Update alternatives: set /usr/bin/cc and /usr/bin/c++
-    (('.*:g\+\+-([^:]*):.*libstdc\+\+:.*'),
-     (),
-     (r'export PLATFORM_CXXLIB_NAME=libstdc++', ),
-    ),
-    (('.*:clang\+\+-([^:]*):.*libstdc\+\+:.*'),
-     (),
-     (r'export PLATFORM_CXXLIB_NAME=libstdc++', ),
-    )
-)
-
-# CONFIG END
-
 class Variant(object):
 
     def __init__(self, cfgfile):
@@ -110,43 +75,56 @@ class Variant(object):
                     + "has no name mapping")
                 pkgs.append(ipkg)
             else:
-                pkgs.append(install_pkg_names[ipkg])
+                pkgs.extend(install_pkg_names[ipkg])
         if len(pkgs)>0:
             self.__cmds.append(
-                "apt-get -y install --no-install-recommends %s" %
-                (" ".join(pkgs)))
+                "%s %s" % (
+                    self.__master_config['imagedef'][self.__lconfig['base']]['install_pkg_cmd'],
+                    (" ".join(pkgs))))
 
     def __variant_cmds_post(self, install_dict):
         # Add packages from the control file
         # Please note that this can happen AFTER the checkout!
         if not 'control_files' in install_dict:
+            self.__logger.info("No control files given")
             return
             
         for cf in install_dict['control_files']:
+            self.__logger.info("Control file [%s]" % cf)
             self.__cmds_post.append(
                 "cd ~builder && mk-build-deps "
                 + "--tool='apt-get -y --no-install-recommends' "
                 + "--install %s" % cf)
 
+    def __variant_prepare(self):
+        if not 'prepare' in self.__lconfig:
+            self.__logger.info("No prepare given")
+            return
+        self.__cmds.extend(self.__lconfig['prepare'])
+            
     def __handle_variant(self):
         variant_flat = ":" + ":".join(self.__lconfig['variant_list']) + ":"
         self.__logger.info("Flat variant [%s]" % variant_flat)
 
+        self.__variant_prepare()
         self.__variant_cmds(variant_flat)
-        self.__variant_install_pkgs(self.__lconfig['install'])
-        self.__variant_cmds_post(self.__lconfig['install'])
     
     def process(self):
         self.__logger.info("Start variant [%s]" % self.__name)
 
         if 'variant_list' in self.__lconfig:
             self.__handle_variant()
+        self.__variant_install_pkgs(self.__lconfig['install'])
+        self.__variant_cmds_post(self.__lconfig['install'])
                 
         stdouterr_filename = os.path.join(
             self.__variant_dir, "docker.stdouterr")
+        rm_docker_image = "true"
+        if "remove_docker_image" in self.__master_config['imagedef'][self.__lconfig['base']]:
+            rm_docker_image =  self.__master_config['imagedef'][self.__lconfig['base']]['remove_docker_image']
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(
-                ["docker", "run", "--rm=true", "-i",
+                ["docker", "run", "--rm=%s" % rm_docker_image, "-i",
                  "-v", "%s:/artifacts:rw" % self.__lconfig['global_tmp_dir'],
                  self.__lconfig['base'],
                  "/bin/bash", "-x", "-e"], stdin=subprocess.PIPE,

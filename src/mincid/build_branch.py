@@ -86,6 +86,9 @@ class Branch(object):
             if 'install' in self.__config.branch_jobs()[sname]:
                 variant_desc[
                     'install'] = self.__config.branch_jobs()[sname]['install']
+
+            if 'prepare' in image:
+                variant_desc['prepare'] = image['prepare']
                 
             variant_cfg_file_name = os.path.join(
                 variant_tmp_dir, "variant.json")
@@ -131,6 +134,9 @@ class Branch(object):
     def __start_image(self, sname, image):
         jc = self.__config.branch_jobs()
         base = self.__config.expand(image['base'])
+        if 'ignore' in image and image['ignore']=="true":
+            self.__logger.info("Ignoring image [%s] [%s]" % (sname, base))
+            return
         self.__logger.info("Start image [%s] [%s]" % (sname, base))
         if 'variants' in image:
             self.__start_variants(sname, image)
