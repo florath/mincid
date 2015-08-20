@@ -96,22 +96,29 @@ class Variant(object):
                 + "--tool='apt-get -y --no-install-recommends' "
                 + "--install %s" % cf)
 
-    def __variant_prepare(self):
+    def __image_prepare(self):
         if not 'prepare' in self.__lconfig:
             self.__logger.info("No prepare given")
             return
         self.__cmds.extend(self.__lconfig['prepare'])
+
+    def __image_build_prepare(self):
+        if not 'build_prepare' in self.__lconfig:
+            self.__logger.info("No build prepare given")
+            return
+        self.__cmds_post.extend(self.__lconfig['build_prepare'])
             
     def __handle_variant(self):
         variant_flat = ":" + ":".join(self.__lconfig['variant_list']) + ":"
         self.__logger.info("Flat variant [%s]" % variant_flat)
 
-        self.__variant_prepare()
         self.__variant_cmds(variant_flat)
     
     def process(self):
         self.__logger.info("Start variant [%s]" % self.__name)
 
+        self.__image_prepare()
+        self.__image_build_prepare()
         if 'variant_list' in self.__lconfig:
             self.__handle_variant()
         self.__variant_install_pkgs(self.__lconfig['install'])

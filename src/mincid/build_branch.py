@@ -90,6 +90,9 @@ class Branch(object):
             if 'prepare' in image:
                 variant_desc['prepare'] = image['prepare']
                 
+            if 'build_prepare' in image:
+                variant_desc['build_prepare'] = image['build_prepare']
+
             variant_cfg_file_name = os.path.join(
                 variant_tmp_dir, "variant.json")
             with open(variant_cfg_file_name, "w") as fd:
