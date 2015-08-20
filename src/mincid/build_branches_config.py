@@ -13,11 +13,12 @@ class BranchesConfig(object):
 
     def __init__(self, tmp_dir):
         self.__tmp_dir = tmp_dir
-        self.__logger = MLogger("BranchesConfig", "BC", self.__tmp_dir)
+        self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
+        self.__logger = MLogger("BranchesConfig", "BC", self.__working_dir)
 
-        with open(os.path.join(self.__tmp_dir, "project_config.json"), "r") as fd:
+        with open(os.path.join(self.__working_dir, "project_config.json"), "r") as fd:
             self.__config = json.load(fd)
-        with open(os.path.join(self.__tmp_dir, "mincid_master.json"), "r") as fd:
+        with open(os.path.join(self.__working_dir, "mincid_master.json"), "r") as fd:
             self.__master_config = json.load(fd)
 
         self.__logger.info("Init branches config")
@@ -26,11 +27,11 @@ class BranchesConfig(object):
         self.__logger.info("Start branches config")
 
         self.__logger.debug("Get branch config")
-        stdouterr_filename = os.path.join(self.__tmp_dir,
+        stdouterr_filename = os.path.join(self.__working_dir,
                                           "docker_build_branches.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(["docker", "run", "--rm=true", "-i",
-                                  "-v", "%s:/artifacts:rw" % self.__tmp_dir,
+                                  "-v", "%s:/artifacts:rw" % self.__working_dir,
                                   self.__master_config['worker_image'],
                                   "/bin/bash"], stdin=subprocess.PIPE,
                                  stdout=fd_stdouterr, stderr=fd_stdouterr)
@@ -38,7 +39,7 @@ class BranchesConfig(object):
 """%s
 su - builder --command "%s"
 su - builder --command 'git clone %s %s'
-""" % ("\n".join(self.__master_config['imagedef'][self.__master_config['worker_image']]['setup_image']),
+""" % ("\n".join(self.__master_config['imagedef'][self.__master_config['worker_image']]['setup_image_minimalistic']),
        self.__config['vcs']['authcmd'], self.__config['vcs']['url'],
        self.__config['dest']), "UTF-8"))
 
@@ -46,8 +47,8 @@ su - builder --command 'git clone %s %s'
             name_for_fs = branch_name.replace("/", "_")
 
             p.stdin.write(bytes(
-"""su - builder --command 'cd %s && git checkout %s && mkdir -p /artifacts/%s && cp mincid.json /artifacts/%s/mincid.json && chmod -R a+rwX /artifacts/%s'
-""" %(self.__config['dest'], branch_name, name_for_fs, name_for_fs,
+"""su - builder --command 'cd %s && git checkout %s && mkdir -p /artifacts/%s && cp %s /artifacts/%s/mincid.json && chmod -R a+rwX /artifacts/%s'
+""" %(self.__config['dest'], branch_name, name_for_fs, self.__config['config'], name_for_fs,
       name_for_fs), 'UTF-8'))
 
         p.stdin.close()
@@ -63,7 +64,7 @@ su - builder --command 'git clone %s %s'
         # Now start up the jobs (one for each branch) to handle these.
         for branch_name in self.__config['branches']:
             # Create Branch dir
-            dirname = os.path.join(self.__tmp_dir,
+            dirname = os.path.join(self.__working_dir,
                                    branch_name.replace("/", "_"))
             stdouterr_filename = os.path.join(dirname, "sbatch.stdouterr")
             with open(stdouterr_filename, "w") as fd_stdouterr:

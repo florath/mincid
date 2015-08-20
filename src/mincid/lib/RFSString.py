@@ -12,5 +12,5 @@ class RFSString(object):
         return self.__str
 
     def fs(self):
-        return self.__str.replace("/", "_")
+        return self.__str.replace("/", "_").replace(":", "_")
     

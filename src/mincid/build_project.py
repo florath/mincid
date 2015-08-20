@@ -7,34 +7,43 @@
 import os
 import sys
 import json
+import time
 import shutil
 import tempfile
 import subprocess
 
 from MLogger import MLogger
+from RFSString import RFSString
 
 class Project(object):
 
     def __init__(self, master_conf, desc_file):
         with open(master_conf, "r") as fd:
             self.__master_config = json.load(fd)
-        self.__tmp_dir = tempfile.mkdtemp(
-            prefix="mincid_build_",
-            dir=self.__master_config["worker_dir"])
-        shutil.copyfile(desc_file,
-                        os.path.join(self.__tmp_dir, "project_config.json"))
-        shutil.copyfile(master_conf,
-                        os.path.join(self.__tmp_dir, "mincid_master.json"))
         with open(desc_file, "r") as fd:
             self.__config = json.load(fd)
-        self.__log_dir = self.__tmp_dir
         self.__name = self.__config['name']
-        self.__logger = MLogger("Project", self.__name, self.__log_dir)
+        self.__rfs = RFSString(self.__name)
+
+        self.__tmp_dir = os.path.join(
+            self.__master_config["worker_dir"],
+            self.__rfs.fs(),
+            time.strftime("%Y%m%d-%H%M%S"))
+        os.makedirs(self.__tmp_dir, exist_ok=True)
+
+        self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
+        os.makedirs(self.__working_dir, exist_ok=True)
+            
+        shutil.copyfile(desc_file,
+                        os.path.join(self.__working_dir, "project_config.json"))
+        shutil.copyfile(master_conf,
+                        os.path.join(self.__working_dir, "mincid_master.json"))
+        self.__logger = MLogger("Project", self.__name, self.__working_dir)
         self.__logger.info("Init project [%s]" % self.__name)
 
     def process(self):
         self.__logger.info("Start project [%s]" % self.__name)
-        stdouterr_filename = os.path.join(self.__tmp_dir,
+        stdouterr_filename = os.path.join(self.__working_dir,
                                           "sbatch_project.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(

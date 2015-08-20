@@ -17,9 +17,10 @@ class Branch(object):
     def __init__(self, branch_name, tmp_dir):
         self.__name = branch_name
         self.__tmp_dir = tmp_dir
+        self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
         self.__jobids = {}
-        self.__config = Config(tmp_dir, branch_name)
-        self.__branch_dir = os.path.join(tmp_dir,
+        self.__config = Config(self.__working_dir, branch_name)
+        self.__branch_dir = os.path.join(self.__working_dir,
                                          branch_name.replace("/", "_"))
         self.__logger = MLogger("Branch", "build_branch", self.__branch_dir)
         self.__logger.info("Init branch [%s]" % (self.__name))
@@ -64,13 +65,14 @@ class Branch(object):
         
         with open(stdouterr_filename, "w") as fd_stdouterr:
             # Create own temp dir
-            rfs = RFSString(self.__name)
-            variant_name = "%s_%s_%s_%s_%s" % \
+            rfsname = RFSString(self.__name)
+            rfsbase = RFSString(base)
+            variant_name = "%s+%s+%s+%s+%s" % \
                            (self.__config.project_cfg('name'),
-                            rfs.fs(),
-                            sname, base, "_".join(variant_list))
-            variant_tmp_dir = tempfile.mkdtemp(
-                prefix=variant_name, dir=self.__variants_base_dir)
+                            rfsname.fs(),
+                            sname, rfsbase.fs(), "_".join(variant_list))
+            variant_tmp_dir = os.path.join(self.__variants_base_dir, variant_name)
+            os.makedirs(variant_tmp_dir, exist_ok=True)
             variant_desc = {
                 'name': variant_name,
                 'base': base,
