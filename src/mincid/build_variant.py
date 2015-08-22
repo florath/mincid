@@ -116,15 +116,21 @@ class Variant(object):
         self.__logger.info("Flat variant [%s]" % variant_flat)
 
         self.__variant_cmds(variant_flat)
-    
+
+    def __global_build_pre_cmds(self):
+        if "build_preparation_cmds" in self.__master_config:
+            self.__build_pre_cmds.extend(self.__master_config["build_preparation_cmds"])
+        
     def process(self):
         self.__logger.info("Start variant [%s]" % self.__name)
 
         self.__image_prepare()
         self.__image_build_prepare()
+        self.__global_build_pre_cmds()
         if 'variant_list' in self.__lconfig:
             self.__handle_variant()
-        self.__variant_install_pkgs(self.__lconfig['install'])
+        if 'install' in self.__lconfig:
+            self.__variant_install_pkgs(self.__lconfig['install'])
         self.__variant_cmds_post(self.__lconfig['install'])
                 
         stdouterr_filename = os.path.join(
@@ -136,9 +142,17 @@ class Variant(object):
         if 'setup_image_minimalistic' in self.__master_config['imagedef'][self.__lconfig['base']]:
             setup_minimalistic="\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image_minimalistic'])
 
+        artifacts_cp=""
+        if 'artifacts' in self.__lconfig:
+            artifacts_list = []
+            for artifact in self.__lconfig['artifacts']:
+                artifacts_list.append("cp -r %s /artifacts" % artifact)
+            artifacts_cp="\n".join(artifacts_list)
+        
         # Log all commands that are executed
         complete_docker_cmd = ["docker", "run", "--rm=%s" % rm_docker_image, "-i",
                                "-v", "%s:/artifacts:rw" % self.__working_dir,
+                               "-v", "%s:/resources:ro" % self.__master_config["resource_dir"],
                                self.__lconfig['base'],
                                "/bin/bash", "-x", "-e"]
         complete_build_cmds = """%s
@@ -148,16 +162,18 @@ su - builder --command "%s"
 su - builder --command 'git clone %s %s'
 su - builder --command 'cd %s && git checkout %s'
 %s
-su - builder --command '%s && %s'""" % \
+su - builder --command '%s && %s'
+%s""" % \
             (setup_minimalistic,
              "\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image']),
              "\n".join(self.__cmds),
-              self.__global_config['vcs']['authcmd'],
-              self.__global_config['vcs']['url'],
-              self.__global_config['dest'], self.__global_config['dest'],
-              self.__lconfig['branch_name'], " && ".join(self.__cmds_post),
-              "\n".join(self.__build_pre_cmds),
-              self.__lconfig['run'])
+             self.__global_config['vcs']['authcmd'],
+             self.__global_config['vcs']['url'],
+             self.__global_config['dest'], self.__global_config['dest'],
+             self.__lconfig['branch_name'], " && ".join(self.__cmds_post),
+             "\n".join(self.__build_pre_cmds),
+             self.__lconfig['run'],
+             artifacts_cp)
         with open(os.path.join(self.__tmp_dir, self.__name + ".sh"), "w") as shlog:
             shlog.write("# %s\n" % " ".join(complete_docker_cmd))
             shlog.write(complete_build_cmds)

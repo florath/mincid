@@ -89,6 +89,10 @@ class Branch(object):
                 variant_desc[
                     'install'] = self.__config.branch_jobs()[sname]['install']
 
+            if 'artifacts' in self.__config.branch_jobs()[sname]:
+                variant_desc[
+                    'artifacts'] = self.__config.branch_jobs()[sname]['artifacts']
+
             if 'prepare' in image:
                 variant_desc['prepare'] = image['prepare']
                 
