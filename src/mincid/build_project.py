@@ -47,7 +47,7 @@ class Project(object):
                                           "sbatch_project.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(
-                ["sbatch", "--job-name=BranchesConfig",
+                ["sbatch", "--job-name=%s+BranchesConfig" % self.__name,
                  "--export=PYTHONPATH",
                  os.path.join(self.__master_config['mincid_install_dir'],
                               "build_branches_config.py"), self.__tmp_dir],
