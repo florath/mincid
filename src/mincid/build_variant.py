@@ -16,6 +16,8 @@ class Variant(object):
             self.__lconfig = json.load(fd)
         self.__name = self.__lconfig['name']
         self.__tmp_dir = self.__lconfig['global_tmp_dir']
+        self.__artifacts_dir = os.path.join(self.__tmp_dir, "artifacts")
+        os.makedirs(self.__artifacts_dir, exist_ok=True)
         self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
         with open(
                 os.path.join(self.__working_dir,
@@ -147,11 +149,13 @@ class Variant(object):
             artifacts_list = []
             for artifact in self.__lconfig['artifacts']:
                 artifacts_list.append("cp -r %s /artifacts" % artifact)
+            artifacts_list.append("chmod a+rwX /artifacts || true")
             artifacts_cp="\n".join(artifacts_list)
         
         # Log all commands that are executed
         complete_docker_cmd = ["docker", "run", "--rm=%s" % rm_docker_image, "-i",
-                               "-v", "%s:/artifacts:rw" % self.__working_dir,
+                               "-v", "%s:/working:rw" % self.__working_dir,
+                               "-v", "%s:/artifacts:rw" % self.__artifacts_dir,
                                "-v", "%s:/resources:ro" % self.__master_config["resource_dir"],
                                self.__lconfig['base'],
                                "/bin/bash", "-x", "-e"]

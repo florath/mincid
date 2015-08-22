@@ -31,7 +31,7 @@ class BranchesConfig(object):
                                           "docker_build_branches.stdouterr")
         with open(stdouterr_filename, "w") as fd_stdouterr:
             p = subprocess.Popen(["docker", "run", "--rm=true", "-i",
-                                  "-v", "%s:/artifacts:rw" % self.__working_dir,
+                                  "-v", "%s:/working:rw" % self.__working_dir,
                                   self.__master_config['worker_image'],
                                   "/bin/bash"], stdin=subprocess.PIPE,
                                  stdout=fd_stdouterr, stderr=fd_stdouterr)
@@ -47,7 +47,7 @@ su - builder --command 'git clone %s %s'
             name_for_fs = branch_name.replace("/", "_")
 
             p.stdin.write(bytes(
-"""su - builder --command 'cd %s && git checkout %s && mkdir -p /artifacts/%s && cp %s /artifacts/%s/mincid.json && chmod -R a+rwX /artifacts/%s'
+"""su - builder --command 'cd %s && git checkout %s && mkdir -p /working/%s && cp %s /working/%s/mincid.json && chmod -R a+rwX /working/%s'
 """ %(self.__config['dest'], branch_name, name_for_fs, self.__config['config'], name_for_fs,
       name_for_fs), 'UTF-8'))
 

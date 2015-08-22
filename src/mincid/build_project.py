@@ -33,6 +33,7 @@ class Project(object):
 
         self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
         os.makedirs(self.__working_dir, exist_ok=True)
+        os.chmod(self.__working_dir, 0o777)
             
         shutil.copyfile(desc_file,
                         os.path.join(self.__working_dir, "project_config.json"))
