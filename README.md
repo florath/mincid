@@ -64,3 +64,6 @@ A email server is used to send notifications about jobs.
 python3 is used a programming language - the glue between the
 executing systems.
 
+## Install
+There is a separate [installation page](doc/Install.md) describing all
+the needed steps. 
