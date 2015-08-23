@@ -22,10 +22,10 @@ Download from [Debian Web Site](https://www.debian.org/CD/http-ftp/)
 ### Install VM
 We will use the virt-maganger.  Start it up and click 'new VM'.
 
-![Virt-Manager New VM](./images/NewWM1.png?raw=true)
+![Virt-Manager New VM 1](./images/NewWM1.png?raw=true)
 
 Press *Forward* and browse for the ISO image and select *Linux* and
 *Debian Wheezy*.
 
-![Virt-Manager New VM](./images/NewWM2.png?raw=true)
+![Virt-Manager New VM 2](./images/NewWM2.png?raw=true)
 
