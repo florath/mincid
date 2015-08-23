@@ -43,3 +43,28 @@ images.  The size for the pure golden image needs not be larger than
 ![Virt-Manager New VM 4](./images/NewVM4.png?raw=true)
 
 Give the machine a name and *Forward*.
+
+![Debian Installation Begin](images/DebInstallBegin.png?raw=true)
+
+Continue installation of the Debian System.  Chose LVM for disk: this
+gives the possibility to easy enlarge the disk image later on.
+Only minimal set of packages need to be chosen (ssh server and
+standard system utilities).
+
+![Debian Installation Packets](images/DebInstallPackets.png?raw=true)
+
+After the reboot, directly halt the VM.  This image is now used to set
+up the other machines.
+
+## Create mincid master node
+There is one mincid master node that control and uses the build
+machines.  Do not use the master node as build node.
+
+```
+cd ../images
+cp --sparse=auto debstretchgi.qcow2 mincid1master.qcow2
+```
+
+In the virt-manager create a new VM and chose *Import existing disk
+image*.
+
