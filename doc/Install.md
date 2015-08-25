@@ -65,6 +65,11 @@ site how to configure slurm itself.  For me, the following
 configuration works.  Mostly all is the standard configuration -
 except the Control[Machine|Addr], NodeName and PartitionName.
 
+Please be sure to add two partitions: mincid and mincidctl.  The
+mincid partition is used to run the workers, the mincidctl is used to
+do internal house-keeping.  Be sure to include all nodes in both
+partitions. 
+
 ```
 ControlMachine=mincid1master
 ControlAddr=10.0.0.143
@@ -104,6 +109,7 @@ SlurmctldDebug=3
 SlurmdDebug=3
 NodeName=mincid1build[1-2] NodeAddr=10.0.0.14[4-5] Sockets=1 CoresPerSocket=2 ThreadsPerCore=1 State=UNKNOWN
 PartitionName=mincid Nodes=mincid1build[1-2] Default=YES MaxTime=INFINITE State=UP
+PartitionName=mincidctl Nodes=mincid1build[1-2] Default=NO MaxTime=INFINITE State=UP
 ```
 
 Also be sure to set the pid file correctly (see the service definition
