@@ -16,45 +16,7 @@ tutorial we will install one central node VM and three build nodes -
 once a golden image of Debian Stretch is created that will be used for
 all these systems.
 
-### Download Installation Image
-Download from [Debian Web Site](https://www.debian.org/CD/http-ftp/)
-
-### Install VM
-We will use the virt-maganger.  Start it up and click 'new VM'.
-
-![Virt-Manager New VM 1](./images/NewVM1.png?raw=true)
-
-Press *Forward* and browse for the ISO image and select *Linux* and
-*Debian Wheezy*.
-
-![Virt-Manager New VM 2](./images/NewVM2.png?raw=true)
-
-Press *Forward*.  On the next dialog chose the basic hardware setup
-(memory / CPUs) for the golden image.  1GByte RAM and one or two CPU
-cores should be enough.
-
-![Virt-Manager New VM 3](./images/NewVM3.png?raw=true)
-
-Press *Forward*.  Depending on your preferences, you need to chose a
-disk size and location here.  I prefer to have a separate disk for VM
-images.  The size for the pure golden image needs not be larger than
-8GBytes.
-
-![Virt-Manager New VM 4](./images/NewVM4.png?raw=true)
-
-Give the machine a name and *Forward*.
-
-![Debian Installation Begin](images/DebInstallBegin.png?raw=true)
-
-Continue installation of the Debian System.  Chose LVM for disk: this
-gives the possibility to easy enlarge the disk image later on.
-Only minimal set of packages need to be chosen (ssh server and
-standard system utilities).
-
-![Debian Installation Packets](images/DebInstallPackets.png?raw=true)
-
-After the reboot, directly halt the VM.  This image is now used to set
-up the other machines.
+A (detailed description)[InstallDetailsGoldenImage.md] is available.
 
 ## Create mincid master node
 There is one mincid master node that control and uses the build
@@ -96,10 +58,17 @@ On all build nodes install
 apt-get install slurmd slurm-client docker.io
 ```
 
+## slurm configuration
+
 Please consult the [slurm](https://computing.llnl.gov/linux/slurm/)
 site how to configure slurm itself.  For me, the following
 configuration works.  Mostly all is the standard configuration -
 except the Control[Machine|Addr], NodeName and PartitionName.
+
+Please be sure to add two partitions: mincid and mincidctl.  The
+mincid partition is used to run the workers, the mincidctl is used to
+do internal house-keeping.  Be sure to include all nodes in both
+partitions. 
 
 ```
 ControlMachine=mincid1master
@@ -110,9 +79,9 @@ CryptoType=crypto/munge
 MpiDefault=none
 ProctrackType=proctrack/pgid
 ReturnToService=2
-SlurmctldPidFile=/var/run/slurmctld.pid
+SlurmctldPidFile=/var/run/slurm-llnl/slurmctld.pid
 SlurmctldPort=6817
-SlurmdPidFile=/var/run/slurmd.pid
+SlurmdPidFile=/var/run/slurm-llnl/slurmd.pid
 SlurmdPort=6818
 SlurmdSpoolDir=/tmp/slurmd
 SlurmUser=slurm
@@ -140,7 +109,12 @@ SlurmctldDebug=3
 SlurmdDebug=3
 NodeName=mincid1build[1-2] NodeAddr=10.0.0.14[4-5] Sockets=1 CoresPerSocket=2 ThreadsPerCore=1 State=UNKNOWN
 PartitionName=mincid Nodes=mincid1build[1-2] Default=YES MaxTime=INFINITE State=UP
+PartitionName=mincidctl Nodes=mincid1build[1-2] Default=NO MaxTime=INFINITE State=UP
 ```
+
+Also be sure to set the pid file correctly (see the service definition
+of slurm(ctl)d.service).  If not systemd might fail
+to start up the service.
 
 ### Check slurm(ctl)d configuration
 Copy the configuration to all nodes (to the directory: /etc/slurm-llnl)
