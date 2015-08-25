@@ -133,7 +133,7 @@ class Variant(object):
             self.__handle_variant()
         if 'install' in self.__lconfig:
             self.__variant_install_pkgs(self.__lconfig['install'])
-        self.__variant_cmds_post(self.__lconfig['install'])
+            self.__variant_cmds_post(self.__lconfig['install'])
                 
         stdouterr_filename = os.path.join(
             self.__tmp_dir, self.__name + ".log")
@@ -150,6 +150,7 @@ class Variant(object):
             for artifact in self.__lconfig['artifacts']:
                 artifacts_list.append("cp -r %s /artifacts" % artifact)
             artifacts_list.append("chmod a+rwX /artifacts || true")
+            artifacts_list.append("chown -R 7777:7777 /artifacts || true")
             artifacts_cp="\n".join(artifacts_list)
         
         # Log all commands that are executed
