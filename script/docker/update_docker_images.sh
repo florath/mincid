@@ -27,12 +27,13 @@ set -e
 
 # Housekeeping
 rm -fr /var/tmp/docker-mkimage*
-##docker images -q | xargs --no-run-if-empty docker rmi -f
+rm -fr /mincid/build/system/docker/*
+docker images -q | xargs --no-run-if-empty docker rmi -f
 
 # Rinse is needed for RPM bases systems
 # apt-get install rinse yum
 # Centos 7
-##/usr/share/docker.io/contrib/mkimage.sh -t centos:7 rinse --distribution centos-7
+/usr/share/docker.io/contrib/mkimage.sh -t centos:7 rinse --distribution centos-7
 # This is needed to get the ubuntu signing key correct
 # apt-get install ubuntu-archive-keyring
 # Ubuntu 15.10 -> wily
@@ -42,25 +43,29 @@ rm -fr /var/tmp/docker-mkimage*
 # Debian 9 -> stretch
 /usr/share/docker.io/contrib/mkimage.sh -t debian:stretch debootstrap --variant=minbase stretch
 
-IIDS=$(docker images -q)
-
-for iid in ${IIDS};
-do
-    docker save ${iid} >/mincid/build/system/docker/${iid}.tar
-done
+docker images | grep -v "IMAGE ID" | grep -v "<none>" | \
+    while read name variant rest; do docker save ${name}:${variant} >/mincid/build/system/docker/${name}_${variant}.tar; done
 
 # Deploy all images on all nodes
 NODELIST=$(sinfo -h -o "%n" -p mincid)
+# Create shell script to add all images
+mkdir -p /mincid/build/system
+NISH="/mincid/build/system/nish.sh"
+rm -f ${NISH}
+echo "#!/bin/bash" >>${NISH}
+echo "docker images -q | xargs --no-run-if-empty docker rmi -f" >>${NISH}
+for tf in /mincid/build/system/docker/*.tar;
+do
+    echo "docker load -i ${tf}" >>${NISH}
+done
+chmod a+x ${NISH}
 
 for node in ${NODELIST};
 do
     # Remove all old images from this node
-    docker images -q | xargs --no-run-if-empty docker rmi -f
-    for tf in /mincid/build/system/docker/*.tar;
-    do
-	srun -w ${node} -p mincidctl docker load -i ${tf}
-    done
+    echo "Handling node [${node}]"
+    srun -w ${node} -p mincidctl ${NISH}
 done
 
-# Switch on job handling
+# Switch on normal job handling
 scontrol update PartitionName=mincid State=UP
