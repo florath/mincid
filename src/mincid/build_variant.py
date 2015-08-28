@@ -144,15 +144,6 @@ class Variant(object):
         if 'setup_image_minimalistic' in self.__master_config['imagedef'][self.__lconfig['base']]:
             setup_minimalistic="\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image_minimalistic'])
 
-        artifacts_cp=""
-        if 'artifacts' in self.__lconfig:
-            artifacts_list = []
-            for artifact in self.__lconfig['artifacts']:
-                artifacts_list.append("cp -r %s /artifacts" % artifact)
-            artifacts_list.append("chmod a+rwX /artifacts || true")
-            artifacts_list.append("chown -R 7777:7777 /artifacts || true")
-            artifacts_cp="\n".join(artifacts_list)
-        
         # Log all commands that are executed
         complete_docker_cmd = ["docker", "run", "--rm=%s" % rm_docker_image, "-i",
                                "-v", "%s:/working:rw" % self.__working_dir,
@@ -168,7 +159,7 @@ su - builder --command 'git clone %s %s'
 su - builder --command 'cd %s && git checkout %s'
 %s
 su - builder --command '%s && %s'
-%s""" % \
+""" % \
             (setup_minimalistic,
              "\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image']),
              "\n".join(self.__cmds),
@@ -177,8 +168,7 @@ su - builder --command '%s && %s'
              self.__global_config['dest'], self.__global_config['dest'],
              self.__lconfig['branch_name'], " && ".join(self.__cmds_post),
              "\n".join(self.__build_pre_cmds),
-             self.__lconfig['run'],
-             artifacts_cp)
+             self.__lconfig['run'] if 'run' in self.__lconfig else "")
         with open(os.path.join(self.__tmp_dir, self.__name + ".sh"), "w") as shlog:
             shlog.write("# %s\n" % " ".join(complete_docker_cmd))
             shlog.write(complete_build_cmds)
