@@ -78,20 +78,16 @@ class Branch(object):
                 'base': base,
                 'branch_name': self.__name,
                 'global_tmp_dir': self.__tmp_dir,
-                'directory': variant_tmp_dir,
-                'run': self.__config.branch_jobs()[sname]['run'],
+                'directory': variant_tmp_dir
             }
 
             if len(variant_list)>0:
                 variant_desc['variant_list'] = variant_list
 
-            if 'install' in self.__config.branch_jobs()[sname]:
-                variant_desc[
-                    'install'] = self.__config.branch_jobs()[sname]['install']
-
-            if 'artifacts' in self.__config.branch_jobs()[sname]:
-                variant_desc[
-                    'artifacts'] = self.__config.branch_jobs()[sname]['artifacts']
+            for pword in ('install', 'run'):
+                if pword in self.__config.branch_jobs()[sname]:
+                    variant_desc[
+                        pword] = self.__config.branch_jobs()[sname][pword]
 
             if 'prepare' in image:
                 variant_desc['prepare'] = image['prepare']
