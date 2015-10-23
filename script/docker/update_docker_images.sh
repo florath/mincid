@@ -4,6 +4,16 @@
 #
 # ToDo: Is special http proxy handling needed?
 
+if test $# -le 1;
+then
+    echo "Usage: update_docker_images BASE_URL DOCKER_IMAGE1 DOCKER_IMAGE2 ..."
+    exit 1;
+fi
+
+IMAGE_BASE_URL=$1
+shift
+DOCKER_IMAGES=$@
+
 set -e
 
 # Switch of any further deployment of jobs
@@ -26,25 +36,16 @@ done
 set -e
 
 # Housekeeping
-rm -fr /var/tmp/docker-mkimage*
 rm -fr /mincid/build/system/docker/*
 docker images -q | xargs --no-run-if-empty docker rmi -f
 
-# Rinse is needed for RPM bases systems
-# apt-get install rinse yum
-# Centos 7
-/usr/share/docker.io/contrib/mkimage.sh -t centos:7 rinse --distribution centos-7
-# This is needed to get the ubuntu signing key correct
-# apt-get install ubuntu-archive-keyring
-# Ubuntu 15.10 -> wily
-/usr/share/docker.io/contrib/mkimage.sh -t ubuntu:wily debootstrap --include=ubuntu-minimal --components=main,universe wily
-# Debian 8 -> jessie
-/usr/share/docker.io/contrib/mkimage.sh -t debian:jessie debootstrap --variant=minbase jessie
-# Debian 9 -> stretch
-/usr/share/docker.io/contrib/mkimage.sh -t debian:stretch debootstrap --variant=minbase stretch
-
-docker images | grep -v "IMAGE ID" | grep -v "<none>" | \
-    while read name variant rest; do docker save ${name}:${variant} >/mincid/build/system/docker/${name}_${variant}.tar; done
+# It is assumed, that the docker images are build (each night)
+# on a dedicated server.  The images can be downloaded by wget.
+(cd /mincid/build/system/docker
+ for docker_image in ${DOCKER_IMAGES}; do
+     wget ${IMAGE_BASE_URL}/${docker_image}
+ done
+)
 
 # Deploy all images on all nodes
 NODELIST=$(sinfo -h -o "%n" -p mincid)
@@ -54,7 +55,7 @@ NISH="/mincid/build/system/nish.sh"
 rm -f ${NISH}
 echo "#!/bin/bash" >>${NISH}
 echo "docker images -q | xargs --no-run-if-empty docker rmi -f" >>${NISH}
-for tf in /mincid/build/system/docker/*.tar;
+for tf in /mincid/build/system/docker/*.tar.xz;
 do
     echo "docker load -i ${tf}" >>${NISH}
 done

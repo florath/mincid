@@ -155,8 +155,7 @@ class Variant(object):
 %s
 %s
 su - builder --command "%s"
-su - builder --command 'git clone %s %s'
-su - builder --command 'cd %s && git checkout %s'
+su - builder --command 'git clone %s --branch %s --single-branch %s'
 %s
 su - builder --command '%s && %s'
 """ % \
@@ -164,9 +163,12 @@ su - builder --command '%s && %s'
              "\n".join(self.__master_config['imagedef'][self.__lconfig['base']]['setup_image']),
              "\n".join(self.__cmds),
              self.__global_config['vcs']['authcmd'],
+
              self.__global_config['vcs']['url'],
-             self.__global_config['dest'], self.__global_config['dest'],
-             self.__lconfig['branch_name'], " && ".join(self.__cmds_post),
+             self.__lconfig['branch_name'],
+             self.__global_config['dest'],
+
+             " && ".join(self.__cmds_post),
              "\n".join(self.__build_pre_cmds),
              self.__lconfig['run'] if 'run' in self.__lconfig else "")
         with open(os.path.join(self.__tmp_dir, self.__name + ".sh"), "w") as shlog:
