@@ -16,8 +16,8 @@ class MincidHttpServer(http.server.BaseHTTPRequestHandler):
                       "Starting project [%s]" % prj_name)
         try:
             project = Project(
-                "/home/mincid/devel/ci/system/mincid_master.json",
-                "/home/mincid/devel/ci/projects/%s.json" % prj_name)
+                "/mincid/build/system/ci/system/mincid_master.json",
+                "/mincid/build/system/ci/projects/%s.json" % prj_name)
             project.cleanup()
             project.process()
             syslog.syslog(syslog.LOG_INFO | syslog.LOG_USER,

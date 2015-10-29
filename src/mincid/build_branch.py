@@ -18,6 +18,10 @@ class Branch(object):
         self.__name = branch_name
         self.__tmp_dir = tmp_dir
         self.__working_dir = os.path.join(self.__tmp_dir, ".mincid")
+        
+        with open(os.path.join(self.__working_dir, "mincid_master.json"), "r") as fd:
+            self.__master_config = json.load(fd)
+
         self.__jobids = {}
         self.__config = Config(self.__working_dir, branch_name)
         self.__branch_dir = os.path.join(self.__working_dir,
@@ -112,7 +116,7 @@ class Branch(object):
                                    dep_str)
                 subproc_slist.append("--dependency=afterok:%s" % dep_str)
             subproc_slist.extend(
-                [os.path.join("/home/mincid/devel/mincid/src/mincid",
+                [os.path.join(self.__master_config['mincid_install_dir'],
                               "build_variant.py"), variant_cfg_file_name])
                 
             p = subprocess.Popen(subproc_slist,
