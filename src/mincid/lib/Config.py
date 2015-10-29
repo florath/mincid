@@ -1,5 +1,5 @@
 
-from RFSString import RFSString
+from mincid.lib.RFSString import RFSString
 
 import os
 import json

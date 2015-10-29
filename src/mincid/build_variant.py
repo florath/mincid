@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from MLogger import MLogger
-from Config import Config
+from mincid.lib.MLogger import MLogger
+from mincid.lib.Config import Config
 
 import os
 import re

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 #
 
-from MLogger import MLogger
-from Config import Config
-from RFSString import RFSString
+from mincid.lib.MLogger import MLogger
+from mincid.lib.Config import Config
+from mincid.lib.RFSString import RFSString
 
 import os
 import sys
@@ -102,6 +102,8 @@ class Branch(object):
 
             subproc_slist = [
                 "sbatch", "--job-name=%s" % variant_name,
+                "--output=%s" % os.path.join(self.__working_dir,
+                                             "slurm_build_branch_%j.out"),
                 "--extra-node-info=1:2:1",
                  "--export=PYTHONPATH"]
             if len(dep_jobids)>0:

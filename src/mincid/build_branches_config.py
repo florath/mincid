@@ -2,7 +2,7 @@
 #
 # Executed within sbatch
 
-from MLogger import MLogger
+from mincid.lib.MLogger import MLogger
 
 import os
 import sys
@@ -69,8 +69,9 @@ su - builder --command 'git clone %s %s'
             stdouterr_filename = os.path.join(dirname, "sbatch.stdouterr")
             with open(stdouterr_filename, "w") as fd_stdouterr:
                 p = subprocess.Popen(
-                    ["sbatch", "--job-name=Branch_%s" %
-                     branch_name,
+                    ["sbatch", "--job-name=Branch_%s" % branch_name,
+                     "--output=%s" % os.path.join(self.__working_dir,
+                                                  "slurm_build_branch_%j.out"),
                      "--export=PYTHONPATH",
                      os.path.join(self.__master_config['mincid_install_dir'],
                                   "build_branch.py"), branch_name,
